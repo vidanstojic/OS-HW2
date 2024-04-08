@@ -654,7 +654,7 @@ struct inode*
 namei(char *path)
 {
 	char name[DIRSIZ];
-	return namex(path, 0, name);
+		return namex(path, 0, name);
 }
 
 struct inode*

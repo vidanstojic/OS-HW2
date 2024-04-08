@@ -288,11 +288,12 @@ sys_open(void)
 	int fd, omode;
 	struct file *f;
 	struct inode *ip;
-
+	int mode = 0;
 	if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
 		return -1;
 
 	begin_op();
+
 
 	if(omode & O_CREATE){
 		ip = create(path, T_FILE, 0, 0);
@@ -300,12 +301,52 @@ sys_open(void)
 			end_op();
 			return -1;
 		}
-	} else {
+	}
+	else {
 		if((ip = namei(path)) == 0){
 			end_op();
 			return -1;
 		}
 		ilock(ip);
+
+
+
+		struct inode *tempInode = ip;
+		int number = 1;
+		while(tempInode->type == T_SYMLINK && omode == O_NOFOLLOW)
+		{
+			char temp[512];
+			int nread = readi(tempInode, temp, 0, sizeof(temp) - 1);
+			if (nread < 0) {
+				cprintf("Error reading inode contents\n");
+				return -1;
+			} else {
+				temp[nread] = '\0';
+				struct inode *di;
+				if((di = namei(temp)) == 0 || number > 10){
+					cprintf("cat: cannot open\n");
+					break;
+				}
+				else
+				{
+					ilock(di);
+					number++;
+					if(di->type == T_SYMLINK){
+						tempInode = di;
+						iunlockput(di);
+						continue;
+					}
+					char temp2[512];
+					int nread2 = readi(di, temp2, 0, sizeof(di));
+					if(nread2 > 0){
+						temp2[nread2] = '\0';
+						cprintf("%s", temp2);
+						iunlockput(di);
+						break;
+					}
+				}
+			}
+		}
 		if(ip->type == T_DIR && omode != O_RDONLY){
 			iunlockput(ip);
 			end_op();
@@ -322,6 +363,12 @@ sys_open(void)
 	}
 	iunlock(ip);
 	end_op();
+
+	if(ip->type == T_SYMLINK && omode != O_RDONLY && omode != O_NOFOLLOW){
+		iunlockput(ip);
+		end_op();
+		return -1;
+	}
 
 	f->type = FD_INODE;
 	f->ip = ip;
@@ -439,5 +486,28 @@ sys_pipe(void)
 	}
 	fd[0] = fd0;
 	fd[1] = fd1;
+	return 0;
+}
+
+int symlink(void)
+{
+	char *target;
+	char *path;
+	struct inode *ip;
+	if(argstr(0, &target) < 0 || argstr(1, &path) < 0)
+      return -1;
+
+	begin_op();
+
+	if((ip = create(path, T_FILE,0,0)) == 0){
+      end_op();
+      return -1;
+    }
+    ip->type = T_SYMLINK;
+    iupdate(ip);
+	writei(ip, target, 0, strlen(target));
+	iunlockput(ip);
+
+	end_op();
 	return 0;
 }

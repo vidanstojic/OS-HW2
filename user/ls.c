@@ -2,7 +2,7 @@
 #include "kernel/stat.h"
 #include "user.h"
 #include "kernel/fs.h"
-
+#include "kernel/fcntl.h"
 char*
 fmtname(char *path)
 {
@@ -26,8 +26,9 @@ void
 ls(char *path)
 {
 	char buf[512], *p;
-	int fd;
-	struct dirent de;
+	char name[512];
+	int fd, n;
+	struct dirent de, di;
 	struct stat st;
 
 	if((fd = open(path, 0)) < 0){
@@ -45,7 +46,10 @@ ls(char *path)
 	case T_FILE:
 		printf("%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
 		break;
-
+	case T_SYMLINK:
+		printf("T_SYMLINK");
+		printf("%s %d %d %d\n", fmtname(path), st.type, st.ino, st.size);
+		break;
 	case T_DIR:
 		if(strlen(path) + 1 + DIRSIZ + 1 > sizeof buf){
 			printf("ls: path too long\n");
@@ -58,12 +62,33 @@ ls(char *path)
 			if(de.inum == 0)
 				continue;
 			memmove(p, de.name, DIRSIZ);
+
 			p[DIRSIZ] = 0;
 			if(stat(buf, &st) < 0){
 				printf("ls: cannot stat %s\n", buf);
 				continue;
 			}
-			printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+			if (st.type == T_SYMLINK) {
+				// Otvori fajl simboličke veze
+				int symlink_fd = open(buf, O_RDONLY);
+				if (symlink_fd < 0) {
+					printf("ls: cannot open symlink %s\n", path);
+				} else {
+					// Pročitaj sadržaj simboličke veze
+					int nbytes = read(symlink_fd, name, sizeof(name) - 1);
+						if (nbytes < 0) {
+							printf("ls: cannot read symlink %s\n", path);
+					} else {
+							// Null-terminate string
+							name[nbytes] = '\0';
+							// Ispisi sadržaj simboličke veze
+							printf("%s %d %d %d -> %s\n", fmtname(buf), st.type, st.ino, st.size, name);
+							}
+					// Zatvori fajl simboličke veze
+					close(symlink_fd);
+				}
+			}else
+				printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
 		}
 		break;
 	}

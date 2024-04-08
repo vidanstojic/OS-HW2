@@ -1,8 +1,11 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user.h"
+#include "kernel/fcntl.h"
 
 char buf[512];
+char buf2[512];
+struct stat st;
 
 void
 cat(int fd)
@@ -32,7 +35,23 @@ main(int argc, char *argv[])
 	}
 
 	for(i = 1; i < argc; i++){
-		if((fd = open(argv[i], 0)) < 0){
+		stat(argv[i], &st);
+		if(st.type == T_SYMLINK)
+		{
+			//printf("USAO U CAT");
+			if((fd = open(argv[i], O_NOFOLLOW)) > 0){
+				//int n = read(fd, buf, sizeof(buf));
+				/*buf[n] = '\0';
+				int fd2 = open(buf, 0);
+				int temp = read(fd2, buf2, sizeof(buf2));*/
+				//printf("%s\n", buf);
+				exit();
+			}else{
+				printf("cat: cannot open %s\n", argv[i]);
+				exit();
+			}
+		}
+		else if((fd = open(argv[i], 0)) < 0){
 			printf("cat: cannot open %s\n", argv[i]);
 			exit();
 		}
