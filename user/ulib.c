@@ -106,6 +106,7 @@ stat(const char *n, struct stat *st)
 	if(fd < 0)
 		return -1;
 	r = fstat(fd, st);
+	st->blocks = (st->size % 512 > 0) ? st->size / 512 + 1 : st->size / 512;
 	close(fd);
 	return r;
 }

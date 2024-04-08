@@ -69,26 +69,26 @@ ls(char *path)
 				continue;
 			}
 			if (st.type == T_SYMLINK) {
-				// Otvori fajl simboličke veze
+
 				int symlink_fd = open(buf, O_RDONLY);
 				if (symlink_fd < 0) {
 					printf("ls: cannot open symlink %s\n", path);
 				} else {
-					// Pročitaj sadržaj simboličke veze
+
 					int nbytes = read(symlink_fd, name, sizeof(name) - 1);
 						if (nbytes < 0) {
 							printf("ls: cannot read symlink %s\n", path);
 					} else {
-							// Null-terminate string
+
 							name[nbytes] = '\0';
-							// Ispisi sadržaj simboličke veze
-							printf("%s %d %d %d -> %s\n", fmtname(buf), st.type, st.ino, st.size, name);
+
+							printf("%s %d %d %d %d-> %s\n", fmtname(buf), st.type, st.ino, st.size, st.blocks, name);
 							}
-					// Zatvori fajl simboličke veze
+
 					close(symlink_fd);
 				}
 			}else
-				printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+				printf("%s %d %d %d %d\n", fmtname(buf), st.type, st.ino, st.size, st.blocks);
 		}
 		break;
 	}

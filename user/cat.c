@@ -38,13 +38,7 @@ main(int argc, char *argv[])
 		stat(argv[i], &st);
 		if(st.type == T_SYMLINK)
 		{
-			//printf("USAO U CAT");
 			if((fd = open(argv[i], O_NOFOLLOW)) > 0){
-				//int n = read(fd, buf, sizeof(buf));
-				/*buf[n] = '\0';
-				int fd2 = open(buf, 0);
-				int temp = read(fd2, buf2, sizeof(buf2));*/
-				//printf("%s\n", buf);
 				exit();
 			}else{
 				printf("cat: cannot open %s\n", argv[i]);

@@ -197,6 +197,7 @@ UPROGS=\
 	$U/_zombie\
 	$U/_sln\
 	$U/_symlinkinfo\
+	$U/_du\
 
 fs.img: $T/mkfs README $(UPROGS)
 	$T/mkfs fs.img README $(UPROGS)
